@@ -1,10 +1,10 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module'; // Asegúrate de que esta línea esté presente
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [AuthModule], // Asegúrate de que el módulo de autenticación esté importado
+    controllers: [],
+    providers: [],
 })
 export class AppModule {}
