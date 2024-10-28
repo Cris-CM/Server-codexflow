@@ -28,26 +28,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('sendMessage')
-  handleMessage(client: Socket, payload: { from: string; to: string; content: string }) {
-    const message = {
-      id: Date.now().toString(),
-      ...payload,
-      timestamp: new Date(),
-    };
+  handleMessage(client: Socket, payload: { 
+    from: string; 
+    to: string; 
+    content: string; 
+    userName: string; 
+  }) {
+    // Guardar el nombre del usuario cuando envía un mensaje
+    if (payload.from !== 'admin') {
+      this.chatService.setUserName(payload.from, payload.userName);
+    }
 
-    this.chatService.saveMessage(message);
-    
+    const message = this.chatService.saveMessage({
+      ...payload,
+      id: Date.now().toString(),
+      timestamp: new Date(),
+    });
+
     this.server.emit(`message:${payload.to}`, message);
-    this.server.emit(`message:${payload.from}`, message);
     
-    if (payload.to === 'admin') {
+    if (payload.to === 'admin' || payload.from === 'admin') {
       this.server.emit('updateAdminChats', this.chatService.getUserChats('admin'));
     }
   }
 
   @SubscribeMessage('getMessageHistory')
   handleGetHistory(client: Socket, userId: string) {
-    return this.chatService.getMessageHistory(userId);
+    const history = this.chatService.getMessageHistory(userId);
+    client.emit('messageHistory', history);
   }
 
   @SubscribeMessage('getAdminChats')
