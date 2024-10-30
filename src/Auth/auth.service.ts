@@ -2,6 +2,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthResponse } from './interfaces/auth-response.interface';
 
 @Injectable()
 export class AuthService {
@@ -21,20 +22,35 @@ export class AuthService {
     return { message: '¡Registro exitoso!' };
   }
 
-  async login(loginDto: LoginDto): Promise<{
-      nombre: string; message: string 
-}> {
-    const user = this.registeredUsers.find(
-      (user) =>
-        user.email === loginDto.email && user.password === loginDto.password,
-    );
+  async login(loginDto: LoginDto): Promise<AuthResponse> {
+    const { email, password } = loginDto;
+
+    // Buscar usuario
+    const user = this.registeredUsers.find(u => u.email === email);
+    
+    // Validar si existe el usuario
     if (!user) {
       throw new HttpException(
-        'Credenciales incorrectas.',
-        HttpStatus.UNAUTHORIZED,
+        'Usuario no encontrado',
+        HttpStatus.UNAUTHORIZED
       );
     }
-    return { message: '¡Inicio de sesión exitoso!', nombre: user.nombre };
+
+    // Validar contraseña
+    if (user.password !== password) {
+      throw new HttpException(
+        'Contraseña incorrecta',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+
+    // Retornar respuesta
+    return {
+      message: '¡Inicio de sesión exitoso!',
+      nombre: user.nombre || email.split('@')[0],
+      id: user.id || Date.now().toString(),
+      email: user.email
+    };
   }
 
   async googleLogin(user: any): Promise<{ message: string }> {

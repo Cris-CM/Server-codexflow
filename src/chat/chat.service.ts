@@ -3,8 +3,8 @@ import { Message } from './models/message.model';
 
 @Injectable()
 export class ChatService {
-  private messages: Message[] = [];
-  private activeUsers: Map<string, string> = new Map();
+  private messages: any[] = [];
+  private activeUsers = new Map<string, string>();
 
   saveMessage(message: Message) {
     // Asegurarse de que el mensaje tenga un ID y timestamp
@@ -25,11 +25,12 @@ export class ChatService {
     return this.activeUsers.get(userId) || `Usuario ${userId}`;
   }
 
-  getMessageHistory(userId: string): Message[] {
+  getMessageHistory(userId: string) {
     return this.messages.filter(
-      msg => (msg.from === userId && msg.to === 'admin') || 
-             (msg.from === 'admin' && msg.to === userId)
-    ).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      msg => 
+        (msg.from === userId && msg.to === 'admin') ||
+        (msg.from === 'admin' && msg.to === userId)
+    );
   }
 
   getUserChats(adminId: string) {
@@ -41,23 +42,25 @@ export class ChatService {
 
     return Array.from(uniqueUsers)
       .filter(userId => userId !== 'admin')
-      .map(userId => {
-        const userMessages = this.messages.filter(
-          msg => (msg.from === userId && msg.to === adminId) || 
-                 (msg.from === adminId && msg.to === userId)
-        );
-        const lastMessage = userMessages[userMessages.length - 1];
-        
-        // Obtener el nombre real del usuario desde el último mensaje
-        const userName = lastMessage?.userName || 
-                        this.activeUsers.get(userId) || 
-                        `Usuario ${userId}`;
-        
-        return {
-          userId,
-          userName,
-          lastMessage
-        };
-      });
+      .map(userId => ({
+        userId,
+        userName: this.activeUsers.get(userId) || `Usuario ${userId}`,
+        lastMessage: this.messages
+          .filter(msg => 
+            (msg.from === userId && msg.to === adminId) ||
+            (msg.from === adminId && msg.to === userId)
+          )
+          .pop()
+      }));
+  }
+
+  updateChats(message: any) {
+    this.messages.push(message);
+    
+    if (message.from !== 'admin') {
+      this.activeUsers.set(message.from, message.userName);
+    }
+
+    return this.getUserChats('admin');
   }
 }

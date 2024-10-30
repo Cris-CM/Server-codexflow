@@ -6,7 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
 
 @Module({
-  imports: [AuthModule, ChatModule],
+  imports: [
+    ChatModule,
+    AuthModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
