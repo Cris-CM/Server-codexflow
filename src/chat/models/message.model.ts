@@ -3,7 +3,7 @@ export interface Message {
   content: string;
   from: string;
   to: string;
-  userName?: string; // Agregamos el nombre del usuario
+  userName?: string;
   timestamp: Date;
 }
 

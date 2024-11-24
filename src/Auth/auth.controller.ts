@@ -1,13 +1,6 @@
 // src/auth/auth.controller.ts
 import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UsePipes,
-  ValidationPipe,
-  UseGuards,
-  Req,
+  Controller,Post,Get,Body,UsePipes,ValidationPipe,UseGuards,Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
