@@ -1,70 +1,71 @@
-// src/auth/auth.service.ts
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './interfaces/auth-response.interface';
+import * as admin from 'firebase-admin';
+
+// Inicializar Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(
+    'codexflow-ae4fb-firebase-adminsdk-27sr9-9e0e1f8cb9.json',
+  ),
+});
 
 @Injectable()
 export class AuthService {
-  private registeredUsers: RegisterDto[] = [];
-
   async register(registerDto: RegisterDto): Promise<{ message: string }> {
-    const existingUser = this.registeredUsers.find(
-      (user) => user.email === registerDto.email,
-    );
-    if (existingUser) {
+    try {
+      const userRecord = await admin.auth().createUser({
+        email: registerDto.email,
+        password: registerDto.password,
+        displayName: registerDto.nombre,
+      });
+
+      const db = admin.firestore();
+      await db.collection('users').doc(userRecord.uid).set({
+        nombre: registerDto.nombre,
+        email: registerDto.email,
+        fechaNacimiento: registerDto.fechaNacimiento,
+      });
+
+      return { message: '¡Registro exitoso!' };
+    } catch (error) {
       throw new HttpException(
-        'Este correo electrónico ya está registrado.',
-        HttpStatus.CONFLICT,
+        'Error al registrar usuario',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    this.registeredUsers.push(registerDto);
-    return { message: '¡Registro exitoso!' };
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
-    const { email, password } = loginDto;
+    try {
+      const userRecord = await admin.auth().getUserByEmail(loginDto.email);
+      // Aquí deberías verificar la contraseña usando un método seguro
 
-    // Buscar usuario
-    const user = this.registeredUsers.find(u => u.email === email);
-    
-    // Validar si existe el usuario
-    if (!user) {
+      const db = admin.firestore();
+      const userDoc = await db.collection('users').doc(userRecord.uid).get();
+      const userData = userDoc.data();
+
+      if (!userData) {
+        throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+      }
+
+      // Calcular la edad del usuario
+      const birthDate = new Date(userData.fechaNacimiento);
+      const age = new Date().getFullYear() - birthDate.getFullYear();
+
+      return {
+        message: '¡Inicio de sesión exitoso!',
+        nombre: userRecord.displayName || '',
+        id: userRecord.uid,
+        email: userRecord.email || '',
+        age, // Devuelve la edad calculada
+      };
+    } catch (error) {
       throw new HttpException(
-        'Usuario no encontrado',
-        HttpStatus.UNAUTHORIZED
+        'Credenciales inválidas',
+        HttpStatus.UNAUTHORIZED,
       );
     }
-
-    // Validar contraseña
-    if (user.password !== password) {
-      throw new HttpException(
-        'Contraseña incorrecta',
-        HttpStatus.UNAUTHORIZED
-      );
-    }
-
-    // Retornar respuesta
-    return {
-      message: '¡Inicio de sesión exitoso!',
-      nombre: user.nombre || email.split('@')[0],
-      id: user.id || Date.now().toString(),
-      email: user.email
-    };
-  }
-
-  async googleLogin(user: any): Promise<{ message: string }> {
-    const existingUser = this.registeredUsers.find(
-      (u) => u.email === user.email,
-    );
-    if (!existingUser) {
-      this.registeredUsers.push(user);
-      return { message: 'Usuario registrado con Google' };
-    }
-    return { message: 'Usuario ya registrado' };
-  }
-
-  getAllRegisteredUsers(): RegisterDto[] {
-    return this.registeredUsers;
   }
 }
