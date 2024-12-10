@@ -8,8 +8,9 @@ import {
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as fs from 'fs';
+import { diskStorage } from 'multer';
 import * as path from 'path';
+import * as fs from 'fs';
 import { Express, Response } from 'express';
 
 @Controller('courses')
@@ -22,7 +23,24 @@ export class CoursesController {
   }
 
   @Post('create')
-  @UseInterceptors(FileInterceptor('courseImage', { dest: './uploads' }))
+  @UseInterceptors(
+    FileInterceptor('courseImage', {
+      storage: diskStorage({
+        destination: 'C:/Users/Liz/Documents/GitHub/codexflow/Client/uploads',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(
+            null,
+            file.fieldname +
+              '-' +
+              uniqueSuffix +
+              path.extname(file.originalname),
+          );
+        },
+      }),
+    }),
+  )
   createCourse(
     @Body() body: any,
     @UploadedFile() file: Express.Multer.File,
@@ -38,7 +56,7 @@ export class CoursesController {
     } = body;
     const courseImage = file
       ? `/uploads/${file.filename}`
-      : 'default-image.png';
+      : '/uploads/default-image.png';
 
     const newCourse = {
       nombreCurso,
@@ -59,13 +77,15 @@ export class CoursesController {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${nombreCurso}</title>
-        <link rel="stylesheet" href="/Client/Styles/courses_development.css">
+    <link rel="stylesheet" href="/desccurso/desccurso.css" />
+        <link rel="icon" href="../img/logo.png" />
+    <title>CodexFlow</title>
     </head>
     <body>
         <header>
             <nav>
                 <div class="logo">
-                    <img src="/ShinkaMirai/Client/Images/Guimarbot.png" alt="ShinkaToMirai Logo" />
+                    <img src="/Client/Images/images/MISLOGOS/logocodex.png" alt="ShinkaToMirai Logo" />
                     <span>ShinkaToMirai</span>
                 </div>
                 <div class="search-bar">
@@ -77,7 +97,7 @@ export class CoursesController {
                     <li><a href="">Contáctanos</a></li>
                 </ul>
                 <div class="user-menu">
-                    <img src="/Client/Images/pikachu.png" alt="Usuario" />
+                    <img src="${courseImage}" alt="Usuario" />
                     <div class="dropdown-menu">
                         <p>Hola, <span class="user-name">Usuario</span></p>
                         <a href="#" onclick="window.location.href='/Client/pages/Courses/Courses.html'">Ver todos mis cursos</a>
@@ -97,55 +117,42 @@ export class CoursesController {
                 <div class="web-content">
                     <h1>${nombreCurso}</h1>
                     <p>${descripcionCurso}</p>
-                    <p>Creado por ${nombreDocente}</p>
+                    <p>${nombreDocente}</p>
                     <button class="btn-curso">Ir al curso</button>
-                </div>
-                <div class="instructor-info">
-                    <img src="${courseImage}" alt="${nombreDocente}" class="instructor-avatar" />
-                    <div class="instructor-details">
-                        <p><strong>${nombreDocente}</strong></p>
-                        <p>${descripcionDocente}</p>
-                        <p>Calificación del instructor:</p>
-                        <p>Estoy aquí para ayudarte a aprender, a alcanzar tus sueños...</p>
-                    </div>
                 </div>
             </section>
             <nav class="curso-nav">
                 <ul>
-                    <li><a href="#reseñas" class="active">Reseñas</a></li>
-                    <li><a href="#instructores">Instructores</a></li>
+                    <li><a href="#reseñas" class="active" onclick="showSection('reseñas')">Reseñas</a></li>
+                    <li><a href="#instructores" onclick="showSection('instructores')">Instructores</a></li>
                 </ul>
                 <hr />
             </nav>
-            <div class="contenido-seccion">
-                <section class="curso-reseñas" id="reseñas" style="display: block">
-                    <h2>Comentarios de los estudiantes</h2>
-                    <div class="reseñas">
-                        <aside class="comments">
-                            <h3>Comentarios</h3>
-                            <div class="comment-box">
-                                <textarea id="comment-input" placeholder="Escribe tu comentario aquí..."></textarea>
-                                <button id="post-comment">Publicar</button>
-                            </div>
-                            <div class="comment-list" id="comment-list">
-                                <!-- Los comentarios se agregarán aquí -->
-                            </div>
-                        </aside>
-                    </div>
-                </section>
-                <section class="curso-instructores" id="instructores" style="display: none">
-                    <h2>Instructor</h2>
-                    <div class="instructor-info">
-                        <img src="${courseImage}" alt="${nombreDocente}" class="instructor-avatar" />
-                        <div class="instructor-details">
-                            <p><strong>${nombreDocente}</strong></p>
-                            <p>${descripcionDocente}</p>
-                            <p>Calificación del instructor:</p>
-                            <p>Estoy aquí para ayudarte a aprender, a alcanzar tus sueños...</p>
+            <section class="curso-reseñas" id="reseñas">
+                <h2>Comentarios de los estudiantes</h2>
+                <div class="reseñas">
+                    <aside class="comments">
+                        <h3>Comentarios</h3>
+                        <div class="comment-box">
+                            <textarea placeholder="Escribe tu comentario aquí..."></textarea>
+                            <button id="post-comment">Publicar</button>
                         </div>
+                        <div class="comment-list">
+                            <!-- Los comentarios se agregarán aquí -->
+                        </div>
+                    </aside>
+                </div>
+            </section>
+            <section class="curso-instructores" id="instructores">
+                <h2>Instructor</h2>
+                <div class="instructor-info">
+                    <img src="${courseImage}" alt="nose" class="instructor-avatar" />
+                    <div class="instructor-details">
+                        <p><strong>${nombreDocente}</strong></p>
+                        <p>${descripcionDocente}</p>
                     </div>
-                </section>
-            </div>
+                </div>
+            </section>
             <section class="cursos-recomendados">
                 <h2>Cursos Recomendados</h2>
                 <div class="carousel">
@@ -162,15 +169,14 @@ export class CoursesController {
                 </div>
             </section>
         </main>
+        <script src="desccurso.js"></script>
         <script src="/Client/Js/common.js"></script>
-        <script src="/Client/Js/courses_development.js"></script>
     </body>
     </html>
     `;
 
-    const directoryPath = path.join(
-      'C:/Users/Liz/Documents/GitHub/codexflow/Client/pages/Courses/Courses_template',
-    );
+    const directoryPath =
+      'C:/Users/Liz/Documents/GitHub/codexflow/Client/pages/Courses/Courses_template';
     const filePath = path.join(
       directoryPath,
       `${nombreCurso.replace(/\s+/g, '_')}.html`,
