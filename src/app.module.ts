@@ -12,6 +12,10 @@ import { CoursesModule } from './courses/courses.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'Client'),
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..'),
+      serveRoot: '/',
+    }),
     ChatModule,
     AuthModule,
     CoursesModule,
