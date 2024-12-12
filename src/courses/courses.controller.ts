@@ -1,17 +1,12 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  UploadedFile,
-  UseInterceptors,
-  Res,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { Controller, Get, Post, Body, Res } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Express, Response } from 'express';
+import { Response } from 'express';
+// ... existing code ...
+import { UploadedFile, UseInterceptors } from '@nestjs/common'; // Asegúrate de importar UploadedFile
+import { FileInterceptor } from '@nestjs/platform-express'; // Asegúrate de importar FileInterceptor
+import { diskStorage } from 'multer'; // Asegúrate de importar diskStorage
+// ... existing code ...
 
 @Controller('courses')
 export class CoursesController {
@@ -23,42 +18,8 @@ export class CoursesController {
   }
 
   @Post('create')
-  @UseInterceptors(
-    FileInterceptor('courseImage', {
-      storage: diskStorage({
-        destination: './Client/images/courses',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(
-            null,
-            file.fieldname +
-              '-' +
-              uniqueSuffix +
-              path.extname(file.originalname),
-          );
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new Error('Solo se permiten archivos de imagen!'), false);
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  createCourse(
-    @Body() body: any,
-    @UploadedFile() file: Express.Multer.File,
-    @Res() res: Response,
-  ): void {
+  createCourse(@Body() body: any, @Res() res: Response): void {
     try {
-      // Crear el directorio si no existe
-      const uploadDir = './Client/images/courses';
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
       const {
         nombreCurso,
         descripcionCurso,
@@ -66,12 +27,9 @@ export class CoursesController {
         ageRange,
         nombreDocente,
         descripcionDocente,
+        courseImage, // Enlace de la imagen del curso
+        docenteImage, // Enlace de la imagen del docente
       } = body;
-
-      // Modificar la ruta de la imagen para que sea correcta
-      const courseImage = file
-        ? `/Client/Images/courses/${file.filename}` // Ruta absoluta desde la raíz
-        : '/Client/Images/default-course.png';
 
       const newCourse = {
         nombreCurso,
@@ -81,6 +39,7 @@ export class CoursesController {
         nombreDocente,
         descripcionDocente,
         courseImage,
+        docenteImage,
       };
       this.courses.push(newCourse); // Guardar el curso en la simulación de base de datos
 
@@ -92,9 +51,8 @@ export class CoursesController {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>${nombreCurso}</title>
-      <link rel="stylesheet" href="/desccurso/desccurso.css" />
+          <link rel="stylesheet" href="/desccurso/desccurso.css" />
           <link rel="icon" href="../img/logo.png" />
-      <title>CodexFlow</title>
       </head>
       <body>
           <header>
@@ -161,7 +119,7 @@ export class CoursesController {
               <section class="curso-instructores" id="instructores">
                   <h2>Instructor</h2>
                   <div class="instructor-info">
-                      <img src="${courseImage}" alt="nose" class="instructor-avatar" />
+                      <img src="${docenteImage}" alt="nose" class="instructor-avatar" />
                       <div class="instructor-details">
                           <p><strong>${nombreDocente}</strong></p>
                           <p>${descripcionDocente}</p>
@@ -322,8 +280,15 @@ export class CoursesController {
       storage: diskStorage({
         destination: './Client/videos',
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(
+            null,
+            file.fieldname +
+              '-' +
+              uniqueSuffix +
+              path.extname(file.originalname),
+          );
         },
       }),
     }),
@@ -334,11 +299,7 @@ export class CoursesController {
     @Res() res: Response,
   ): void {
     try {
-      const {
-        videoTitle,
-        videoDescription,
-        courseId,
-      } = body;
+      const { videoTitle, videoDescription, courseId } = body;
 
       const videoUrl = file ? `/Client/videos/${file.filename}` : '';
 
@@ -385,7 +346,8 @@ export class CoursesController {
       </html>
       `;
 
-      const directoryPath = 'C:/Users/Liz/Documents/GitHub/codexflow/Client/pages/Courses/Courses_template/route videos';
+      const directoryPath =
+        'C:/Users/Liz/Documents/GitHub/codexflow/Client/pages/Courses/Courses_template/route videos';
       if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
       }
@@ -398,9 +360,8 @@ export class CoursesController {
       fs.writeFileSync(filePath, htmlContent);
       res.status(201).json({
         message: 'Video creado exitosamente',
-        path: `/Client/pages/Courses/Courses_template/route videos/${videoTitle.replace(/\s+/g, '_')}.html`
+        path: `/Client/pages/Courses/Courses_template/route videos/${videoTitle.replace(/\s+/g, '_')}.html`,
       });
-
     } catch (error) {
       console.error('Error:', error);
       res.status(500).send('Error al crear el video');
